@@ -1,0 +1,48 @@
+function [Efd0,Xgen0] = GeneratorInit(Pgen, U0, gen, gentype,bus)
+
+%% Init
+global freq;
+
+[ngen,c] = size(Pgen);
+Xgen0 = zeros(ngen,1);
+Efd0 = zeros(ngen,1);
+d=[1:length(gentype)]';
+
+%% Define types
+type1 = d(gentype==1);
+type2 = d(gentype==2);
+type3 = d(gentype==3);
+
+%% Generator type 1: classical model
+%% Generator type 2: 4th order model
+%% Generator type 3: 6th order model
+xd = Pgen(type3,7);
+xq = Pgen(type3,8);
+xd_tr = Pgen(type3,9);
+xq_tr = Pgen(type3,10);
+xd_2tr = Pgen(type3,11);
+xq_2tr = Pgen(type3,12);
+
+omega0 = ones(length(type3),1).*2.*pi.*freq;
+
+Ia0 = (bus(type3,3) - j.*bus(type3,4))./(conj(U0(type3,1))); % dong may phat
+phi0 = angle(Ia0);
+
+Eq0 = U0(type3,1) + j.*xq.*Ia0; % Ef ban dau
+delta0 = angle(Eq0);
+
+id0 = abs(Ia0).*sin(delta0 - phi0); % doc truc
+iq0 = abs(Ia0).*cos(delta0 - phi0);  % ngang truc
+
+Efd0(type3) = abs(Eq0) + (xd - xq).*id0; % dien truong
+theta = angle(U0);
+Ud = abs(U0(type3,1)).*sin(delta0-theta);
+Uq = abs(U0(type3,1)).*cos(delta0-theta); 
+Ed_tr0 = Ud - iq0.*xq_tr ;
+Eq_tr0 = Uq + id0.*xd_tr ;
+
+Eq_2tr0 = Ed_tr0 + iq0.*xq_2tr;%dien ap ngang truc qua do
+Ed_2tr0 = Ud - j.*iq0.*xq_2tr;%dien ap doc truc qua do
+Xgen0(type3,1:6) = [ delta0, omega0 , Eq_tr0, Ed_tr0, Eq_2tr0, Ed_2tr0];
+
+return;
